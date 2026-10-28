@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>오늘 영어 퀴즈</title>
+<style>
+  :root { --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --sub:#6e6e73; --line:#e5e5ea;
+          --blue:#0071e3; --ok:#1a7f37; --okbg:#e8f5ec; --ng:#c62828; --ngbg:#fdecec; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#000; --card:#1c1c1e; --ink:#f5f5f7; --sub:#98989d; --line:#38383a;
+            --okbg:#12301c; --ngbg:#3a1414; --ok:#4cc96f; --ng:#ff6b6b; --blue:#2997ff; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif; }
+  .wrap { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+  header { padding-right:90px; }
+  header h1 { font-size:22px; margin:0 0 4px; }
+  header p { margin:0; color:var(--sub); font-size:14px; }
+  .tabs { display:flex; gap:8px; margin:16px 0 0; }
+  .tab { flex:1; font:inherit; font-size:15px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+         border-radius:12px; padding:9px 8px; cursor:pointer; }
+  .tab.on { border-color:var(--blue); color:var(--blue); font-weight:600; }
+  .tab small { color:var(--sub); font-weight:400; }
+  .bar { height:6px; background:var(--line); border-radius:3px; margin:14px 0 18px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:var(--blue); transition:width .3s; }
+  .q { background:var(--card); border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .q .meta { font-size:12px; color:var(--sub); margin-bottom:6px; }
+  .q .tag { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--line); margin-left:6px; }
+  .q h2 { font-size:17px; margin:0 0 4px; font-weight:600; }
+  .q .ko { color:var(--sub); font-size:14px; margin:0 0 12px; }
+  .opt .oko { display:block; color:var(--sub); font-size:13px; margin-top:2px; }
+  .exp .en { display:block; margin-top:4px; color:var(--sub); }
+  .opt { display:block; width:100%; text-align:left; font:inherit; color:inherit; background:none;
+         border:1.5px solid var(--line); border-radius:12px; padding:11px 14px; margin:8px 0; cursor:pointer; }
+  .opt:hover:not(:disabled) { border-color:var(--blue); }
+  .opt:disabled { cursor:default; }
+  .opt.ok { border-color:var(--ok); background:var(--okbg); }
+  .opt.ng { border-color:var(--ng); background:var(--ngbg); }
+  .exp { display:none; margin-top:10px; padding:12px 14px; border-radius:12px; background:var(--bg); font-size:14px; }
+  .exp b { display:block; margin-bottom:2px; }
+  .q.done .exp { display:block; }
+  .q.wrong { outline:2px solid var(--ng); outline-offset:-2px; }
+  .empty { background:var(--card); border-radius:16px; padding:24px; text-align:center; color:var(--sub); }
+  .result { display:none; background:var(--card); border-radius:16px; padding:20px; text-align:center; }
+  .result .score { font-size:40px; font-weight:700; margin:6px 0; }
+  .result ul { text-align:left; padding-left:18px; color:var(--sub); font-size:14px; }
+  .btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .btn { font:inherit; border:0; border-radius:22px; padding:10px 18px; cursor:pointer; background:var(--blue); color:#fff; }
+  .btn.ghost { background:var(--line); color:var(--ink); }
+  .note { font-size:13px; color:var(--sub); margin-top:10px; }
+  .close { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px; z-index:10;
+           font:inherit; font-size:14px; border:0; border-radius:18px; padding:7px 14px; cursor:pointer;
+           background:var(--card); color:var(--ink); box-shadow:0 1px 6px rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+<button class="close" id="closeTop" aria-label="퀴즈 닫기">✕ 닫기</button>
+<div class="wrap">
+  <header><h1 id="title">🧩 오늘 영어 퀴즈</h1><p id="sub"></p></header>
+  <div class="tabs">
+    <button class="tab on" data-set="today">오늘 퀴즈 <small id="cntToday"></small></button>
+    <button class="tab" data-set="review">지난 오답 풀기 <small id="cntReview"></small></button>
+  </div>
+  <div class="bar"><i id="prog"></i></div>
+  <div id="list"></div>
+  <div class="result" id="result">
+    <div id="resTitle">오늘의 점수</div>
+    <div class="score" id="score"></div>
+    <div id="wrongTitle"></div>
+    <ul id="wrongList"></ul>
+    <div class="btns">
+      <button class="btn" id="send">결과 보내기</button>
+      <button class="btn ghost" id="retry">틀린 문제만 다시 풀기</button>
+      <button class="btn ghost" id="reset">처음부터</button>
+      <button class="btn ghost" id="closeEnd">닫고 돌아가기</button>
+    </div>
+    <div class="note" id="sendNote">결과를 보내면 리아가 틀린 표현을 기록해 다음 수업과 "지난 오답 풀기"에 다시 넣어요.</div>
+  </div>
+</div>
+<script>
+const DATA = {"id": "day028", "day": 28, "date": "2026-10-28", "theme": "이메일·프레젠테이션 + 📰 시사·경제", "questions": [{"expr": "(Just) circling back on ~", "tag": "톤 Tone", "q": "Your agency hasn't replied about the homepage banner for a week. You want to nudge them without sounding annoyed. Which opener fits best?", "q_ko": "에이전시가 홈페이지 배너 건에 일주일째 답이 없어요. 짜증 난 느낌 없이 다시 챙기고 싶어요. 가장 알맞은 첫 문장은?", "opts": ["Why haven't you answered my email about the banner?", "Circling you back on the banner.", "Just circling back on the banner — any update on your end?", "As I already said twice, please send the banner."], "a": 2, "why": "Just circling back on ~은 상대를 탓하지 않고 부드럽게 다시 챙기는 표현이에요. circle you back은 틀린 형태이고, 나머지 둘은 따지는 느낌이에요.", "why_en": "\"Just circling back on X\" nudges politely without blame.", "bank_key": "(Just) circling back on ~"}, {"expr": "Looping in ~ (loop someone in)", "tag": "용법 Usage", "q": "You add your logistics manager to an email thread because she needs to answer a question about customs. Which line is most natural?", "q_ko": "통관 질문에 답해야 해서 물류 매니저를 메일에 추가해요. 가장 자연스러운 문장은?", "opts": ["Looping in Hana, who can confirm the customs timeline.", "Looping Hana for visibility only, no action needed.", "Looping on Hana to the customs timeline.", "Loop-in Hana, she confirms customs."], "a": 0, "why": "looping in + 사람 + who ~(역할)가 표준 형태예요. 조치가 필요 없는 단순 참조는 for visibility로 써야 하고, looping on·Loop-in은 틀린 형태예요.", "why_en": "\"Looping in X, who can…\" adds someone who needs to act.", "bank_key": "Looping in ~ (loop someone in)"}, {"expr": "Happy to hop on a call if that's easier.", "tag": "뉘앙스 Nuance", "q": "An email thread with a retail partner has gone back and forth six times. You want to suggest a call in a relaxed, accommodating way. Which is best?", "q_ko": "유통 파트너와 메일이 여섯 번이나 오갔어요. 편하게, 상대를 배려하며 통화를 제안하고 싶어요. 가장 좋은 말은?", "opts": ["We must have a call today.", "Please hop on the call.", "Can you jump at a call?", "Happy to hop on a call if that's easier."], "a": 3, "why": "Happy to hop on a call if that's easier는 상대 편의를 앞세운 부드러운 제안이에요. hop on the call은 '이미 잡힌 통화에 들어오라'는 뜻이고, jump at은 '덥석 잡다'라 어색해요.", "why_en": "It offers a call as an option, putting the other person's convenience first.", "bank_key": "Happy to hop on a call if that's easier."}, {"expr": "(Copying ~) for visibility", "tag": "뉘앙스 Nuance", "q": "You add your HQ director to a supplier email. She doesn't need to do anything — you just want her aware. Which line signals that best?", "q_ko": "공급사 메일에 본사 상무님을 추가해요. 따로 하실 일은 없고 알고만 계시면 돼요. 이걸 가장 잘 전하는 문장은?", "opts": ["Looping in Ms. Park to review and approve.", "Copying Ms. Park for visibility.", "Copying Ms. Park for a visibility.", "Adding Ms. Park for her action."], "a": 1, "why": "for visibility = 참고용, 조치 불필요라는 신호예요. a visibility는 관사 오류이고, looping in to review·for her action은 행동을 요구하는 말이에요.", "why_en": "\"For visibility\" means FYI — no action needed.", "bank_key": "(Copying ~) for visibility"}, {"expr": "📰 sticky inflation / inflation is (proving) sticky", "tag": "📰 시사 News", "q": "Prices in Egypt rose fast last year and are still not coming down. Which sentence best describes this persistence?", "q_ko": "이집트 물가가 작년에 빠르게 올랐고 아직도 내려오지 않아요. 이 '버팀'을 가장 잘 표현한 문장은?", "opts": ["Inflation in Egypt is in a sticky situation.", "Inflation in Egypt is very high level.", "Inflation in Egypt is proving sticky.", "Inflation in Egypt is sticking out."], "a": 2, "why": "is proving sticky가 '내려오지 않고 버틴다'는 지속성을 말해요. a sticky situation은 '곤란한 상황', stick out은 '튀어나오다'이고, high level은 수준만 말하며 문법도 어색해요.", "why_en": "\"Proving sticky\" stresses that inflation refuses to come down.", "bank_key": "sticky inflation / inflation is (proving) sticky"}, {"expr": "📰 (geopolitical) risk premium", "tag": "📰 시사 News", "q": "Freight rates jumped on fears of Red Sea attacks, although no ships have actually been delayed yet. Which sentence fits best in your report?", "q_ko": "홍해 공격 우려로 운임이 뛰었지만 실제로 지연된 선박은 아직 없어요. 보고서에 가장 알맞은 문장은?", "opts": ["Current freight rates carry a sizeable risk premium.", "Current freight rates are a premium risk.", "Current freight rates have a premium quality risk.", "Current freight rates are risky premium."], "a": 0, "why": "risk premium은 '실제 차질이 아니라 우려 때문에 가격에 얹힌 부분'이고, rates carry a risk premium이 자연스러운 형태예요. 나머지는 premium을 '고급'처럼 쓰거나 어순이 틀렸어요.", "why_en": "Prices \"carry a risk premium\" when fear, not actual disruption, pushes them up.", "bank_key": "(geopolitical) risk premium"}], "review": [{"expr": "Can I (just) jump in here? / If I could jump in", "tag": "지난 오답 Review", "q": "On a regional video call, the Egypt team is about to sign off on the wrong launch date. You need to interrupt briefly. What do you say?", "q_ko": "지역 화상 회의에서 이집트 팀이 잘못된 출시일로 확정하려 해요. 잠깐 끼어들어야 해요. 뭐라고 할까요?", "opts": ["Can I jump into here?", "Sorry, can I just jump in here? I think the date is the 12th, not the 2nd.", "Let me break your discussion.", "I want to jump on you for a second."], "a": 1, "why": "끼어들 때는 전치사 없이 jump in이에요. jump into here는 틀린 형태, break your discussion은 직역, jump on someone은 '누구를 몰아세우다'라는 뜻이에요. 지난번 틀린 표현이라 상황을 바꿔 다시 냈어요.", "why_en": "\"Can I just jump in here?\" is the polite way to interrupt.", "bank_key": "Can I (just) jump in here? / If I could jump in", "from": "Day 20"}, {"expr": "ballpark (figure)", "tag": "용법 Usage", "q": "Your GM asks how much the Ramadan campaign might cost. You don't have the final quote yet. Which reply is most natural?", "q_ko": "GM이 라마단 캠페인 비용이 얼마쯤 될지 물어요. 아직 최종 견적은 없어요. 가장 자연스러운 대답은?", "opts": ["The exact ballpark is $412,350.", "It's in the ballpark field of the budget.", "We're out of the ballpark on this.", "Ballpark, around $400K — I'll confirm once the agency quote comes in."], "a": 3, "why": "ballpark (figure) = 대략적인 어림 숫자예요. 정확한 숫자와는 함께 쓰지 않고, ballpark field·out of the ballpark는 이 뜻으로 쓰지 않아요.", "why_en": "\"Ballpark\" gives a rough estimate, not an exact number.", "bank_key": "ballpark (figure)", "from": "Day 1"}, {"expr": "I've been meaning to ~", "tag": "용법 Usage", "q": "You message a former colleague in Riyadh you haven't contacted in months. Which opener is grammatically correct and natural?", "q_ko": "몇 달 연락 못 한 리야드의 예전 동료에게 메시지를 보내요. 문법적으로 맞고 자연스러운 첫 문장은?", "opts": ["I've been meaning to reach out since your move to Noon — how's it going?", "I've been meaning reaching out to you.", "I've been meaning to reach out yesterday.", "I'm meaning to reach out for months."], "a": 0, "why": "have been meaning to + 동사원형이 맞는 형태예요. meaning reaching은 틀리고, yesterday 같은 특정 과거 시점과는 쓰지 않으며, I'm meaning은 현재진행형이라 어색해요.", "why_en": "Use \"I've been meaning to + verb\" for something you've intended for a while.", "bank_key": "I've been meaning to ~", "from": "Day 7"}, {"expr": "Did you manage to switch off? (switch off)", "tag": "뉘앙스 Nuance", "q": "Your agency lead is back from a week in the Maldives. Which small-talk question shows you hope she really rested?", "q_ko": "에이전시 리드가 몰디브에서 일주일 쉬고 돌아왔어요. 정말 푹 쉬었길 바라는 마음이 담긴 스몰토크는?", "opts": ["Did you switch on during the holiday?", "Did you switch off our project?", "Did you manage to switch off?", "Did you manage to turn off you?"], "a": 2, "why": "switch off = 일 생각을 끄고 쉬다, manage to가 '쉽진 않았겠지만'이라는 공감을 더해요. switch on은 반대, switch off our project는 '프로젝트를 껐냐'는 뜻, turn off you는 틀린 형태예요.", "why_en": "\"Did you manage to switch off?\" asks if someone truly disconnected from work.", "bank_key": "Did you manage to switch off? (switch off)", "from": "Day 7"}]};
+const SETS = { today: DATA.questions, review: DATA.review || [] };
+const KEY = "eng-quiz-" + DATA.id;
+const saved = JSON.parse(localStorage.getItem(KEY) || '{"today":{},"review":{},"sent":{}}');
+let cur = location.hash === "#review" ? "review" : "today", only = null;  // 메일의 "지난 오답 풀기" 링크는 #review
+
+document.getElementById("sub").textContent = `Day ${DATA.day} · ${DATA.theme} · ${DATA.date}`;
+document.getElementById("cntToday").textContent = `(${SETS.today.length})`;
+document.getElementById("cntReview").textContent = `(${SETS.review.length})`;
+
+function save() { localStorage.setItem(KEY, JSON.stringify(saved)); }
+function qs() { return SETS[cur]; }
+function st() { return saved[cur]; }
+
+function render() {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.set === cur));
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  if (!qs().length) {
+    list.innerHTML = '<div class="empty">지난 오답이 없어요 👏<br>틀린 문제가 생기면 여기에서 예문을 바꿔 다시 풀 수 있어요.</div>';
+    document.getElementById("result").style.display = "none";
+    document.getElementById("prog").style.width = "0";
+    return;
+  }
+  qs().forEach((it, i) => {
+    if (only && !only.includes(i)) return;
+    const card = document.createElement("div");
+    card.className = "q";
+    card.innerHTML = `<div class="meta">${i + 1} / ${qs().length}<span class="tag"></span></div>
+      <h2></h2><div class="ko"></div><div class="opts"></div><div class="exp"><b></b><span></span><span class="en"></span><div class="note"></div></div>`;
+    card.querySelector(".tag").textContent = it.tag + (it.from ? ` · ${it.from}` : "");
+    card.querySelector("h2").textContent = it.q;
+    card.querySelector(".ko").textContent = it.q_ko || "";
+    card.querySelector(".exp .en").textContent = it.why_en || "";
+    card.querySelector(".exp span").textContent = it.why;
+    card.querySelector(".exp .note").textContent = "표현: " + it.expr;
+    it.opts.forEach((o, j) => {
+      const b = document.createElement("button");
+      // 보기는 영어만 보여준다 (한국어 번역은 정답을 흘리므로 표시하지 않음 — 2026-10-25 실장님 지시)
+      const en = Array.isArray(o) ? o[0] : o;
+      b.className = "opt"; b.textContent = `${"ABCD"[j]}. ${en}`;
+      b.onclick = () => { st()[i] = j; save(); paint(card, it, i); update(); };
+      card.querySelector(".opts").appendChild(b);
+    });
+    list.appendChild(card);
+    if (st()[i] !== undefined) paint(card, it, i);
+  });
+  update();
+}
+
+function paint(card, it, i) {
+  const pick = st()[i];
+  card.classList.add("done");
+  card.classList.toggle("wrong", pick !== it.a);
+  card.querySelectorAll(".opt").forEach((b, j) => {
+    b.disabled = true;
+    if (j === it.a) b.classList.add("ok");
+    if (j === pick && pick !== it.a) b.classList.add("ng");
+  });
+  card.querySelector(".exp b").textContent = pick === it.a ? "✅ 정답" : `❌ 오답 — 정답은 ${"ABCD"[it.a]}`;
+}
+
+function wrongOf(set) { return SETS[set].map((_, i) => i).filter(i => saved[set][i] !== undefined && saved[set][i] !== SETS[set][i].a); }
+
+function update() {
+  const scope = only || qs().map((_, i) => i);
+  document.getElementById("prog").style.width = (scope.filter(i => st()[i] !== undefined).length / scope.length * 100) + "%";
+  const done = qs().every((_, i) => st()[i] !== undefined);
+  document.getElementById("result").style.display = done ? "block" : "none";
+  if (!done) return;
+  const wrong = wrongOf(cur);
+  document.getElementById("resTitle").textContent = cur === "today" ? "오늘의 점수" : "지난 오답 다시 풀기";
+  document.getElementById("score").textContent = `${qs().length - wrong.length} / ${qs().length}`;
+  document.getElementById("wrongTitle").textContent = wrong.length ? "복습할 표현" : "전부 맞혔어요 👏";
+  document.getElementById("wrongList").innerHTML = "";
+  wrong.forEach(i => { const li = document.createElement("li"); li.textContent = `${i + 1}번 — ${qs()[i].expr}`;
+                       document.getElementById("wrongList").appendChild(li); });
+  document.getElementById("retry").style.display = wrong.length ? "" : "none";
+  document.getElementById("send").textContent = saved.sent[cur] ? "결과 다시 보내기" : "결과 보내기";
+}
+
+// 결과 보내기: 리아가 읽을 수 있는 정해진 형식으로 메일을 만든다 (회사 PC·휴대폰 어디서나 동작)
+function resultText(set) {
+  const w = wrongOf(set);
+  return `[ENG-RESULT] ${DATA.id} ${set} ${SETS[set].length - w.length}/${SETS[set].length} wrong=${w.map(i => i + 1).join(",") || "none"}\n`
+       + w.map(i => `- ${i + 1}. ${SETS[set][i].expr}`).join("\n");
+}
+document.getElementById("send").onclick = () => {
+  const body = resultText(cur);
+  saved.sent[cur] = new Date().toISOString(); save(); update();
+  // 리아 웹(실장님 Mac) 안에서 열렸으면 바로 기록
+  if (location.port === "8765") {
+    // 리아 웹에서 열었으면 메일 없이 바로 기록하고 끝 (실패하면 메일로)
+    fetch("/api/english/result", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: DATA.id, set: cur, answers: saved[cur], text: body }) })
+      .then(r => { if (!r.ok) throw 0; alert("리아에게 결과를 보냈어요 ✓"); })
+      .catch(() => mailResult(body));
+    return;
+  }
+  mailResult(body);
+};
+function mailResult(body) {
+  location.href = "mailto:juslisten@gmail.com?subject=" + encodeURIComponent(`[퀴즈 결과] Day ${DATA.day} (${DATA.date})`)
+                + "&body=" + encodeURIComponent(body + "\n\n(이대로 보내기만 하면 리아가 기록해요)");
+}
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { cur = t.dataset.set; only = null; render(); window.scrollTo(0, 0); });
+document.getElementById("retry").onclick = () => {
+  only = wrongOf(cur); only.forEach(i => delete st()[i]); save(); render(); window.scrollTo(0, 0);
+};
+document.getElementById("reset").onclick = () => { saved[cur] = {}; only = null; save(); render(); window.scrollTo(0, 0); };
+function closeQuiz() {
+  window.close();
+  setTimeout(() => {
+    if (location.port === "8765") location.href = "/";
+    else if (history.length > 1) history.back();
+    else location.href = "about:blank";
+  }, 300);
+}
+document.getElementById("closeTop").onclick = closeQuiz;
+document.getElementById("closeEnd").onclick = closeQuiz;
+render();
+</script>
+</body>
+</html>
