@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>오늘 영어 퀴즈</title>
+<style>
+  :root { --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --sub:#6e6e73; --line:#e5e5ea;
+          --blue:#0071e3; --ok:#1a7f37; --okbg:#e8f5ec; --ng:#c62828; --ngbg:#fdecec; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#000; --card:#1c1c1e; --ink:#f5f5f7; --sub:#98989d; --line:#38383a;
+            --okbg:#12301c; --ngbg:#3a1414; --ok:#4cc96f; --ng:#ff6b6b; --blue:#2997ff; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif; }
+  .wrap { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+  header { padding-right:90px; }
+  header h1 { font-size:22px; margin:0 0 4px; }
+  header p { margin:0; color:var(--sub); font-size:14px; }
+  .tabs { display:flex; gap:8px; margin:16px 0 0; }
+  .tab { flex:1; font:inherit; font-size:15px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+         border-radius:12px; padding:9px 8px; cursor:pointer; }
+  .tab.on { border-color:var(--blue); color:var(--blue); font-weight:600; }
+  .tab small { color:var(--sub); font-weight:400; }
+  .bar { height:6px; background:var(--line); border-radius:3px; margin:14px 0 18px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:var(--blue); transition:width .3s; }
+  .q { background:var(--card); border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .q .meta { font-size:12px; color:var(--sub); margin-bottom:6px; }
+  .q .tag { display:inline-block; padding:1px 8px; border-radius:10px; background:var(--line); margin-left:6px; }
+  .q h2 { font-size:17px; margin:0 0 4px; font-weight:600; }
+  .q .ko { color:var(--sub); font-size:14px; margin:0 0 12px; }
+  .opt .oko { display:block; color:var(--sub); font-size:13px; margin-top:2px; }
+  .exp .en { display:block; margin-top:4px; color:var(--sub); }
+  .opt { display:block; width:100%; text-align:left; font:inherit; color:inherit; background:none;
+         border:1.5px solid var(--line); border-radius:12px; padding:11px 14px; margin:8px 0; cursor:pointer; }
+  .opt:hover:not(:disabled) { border-color:var(--blue); }
+  .opt:disabled { cursor:default; }
+  .opt.ok { border-color:var(--ok); background:var(--okbg); }
+  .opt.ng { border-color:var(--ng); background:var(--ngbg); }
+  .exp { display:none; margin-top:10px; padding:12px 14px; border-radius:12px; background:var(--bg); font-size:14px; }
+  .exp b { display:block; margin-bottom:2px; }
+  .q.done .exp { display:block; }
+  .q.wrong { outline:2px solid var(--ng); outline-offset:-2px; }
+  .empty { background:var(--card); border-radius:16px; padding:24px; text-align:center; color:var(--sub); }
+  .result { display:none; background:var(--card); border-radius:16px; padding:20px; text-align:center; }
+  .result .score { font-size:40px; font-weight:700; margin:6px 0; }
+  .result ul { text-align:left; padding-left:18px; color:var(--sub); font-size:14px; }
+  .btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .btn { font:inherit; border:0; border-radius:22px; padding:10px 18px; cursor:pointer; background:var(--blue); color:#fff; }
+  .btn.ghost { background:var(--line); color:var(--ink); }
+  .note { font-size:13px; color:var(--sub); margin-top:10px; }
+  .close { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px; z-index:10;
+           font:inherit; font-size:14px; border:0; border-radius:18px; padding:7px 14px; cursor:pointer;
+           background:var(--card); color:var(--ink); box-shadow:0 1px 6px rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+<button class="close" id="closeTop" aria-label="퀴즈 닫기">✕ 닫기</button>
+<div class="wrap">
+  <header><h1 id="title">🧩 오늘 영어 퀴즈</h1><p id="sub"></p></header>
+  <div class="tabs">
+    <button class="tab on" data-set="today">오늘 퀴즈 <small id="cntToday"></small></button>
+    <button class="tab" data-set="review">지난 오답 풀기 <small id="cntReview"></small></button>
+  </div>
+  <div class="bar"><i id="prog"></i></div>
+  <div id="list"></div>
+  <div class="result" id="result">
+    <div id="resTitle">오늘의 점수</div>
+    <div class="score" id="score"></div>
+    <div id="wrongTitle"></div>
+    <ul id="wrongList"></ul>
+    <div class="btns">
+      <button class="btn" id="send">결과 보내기</button>
+      <button class="btn ghost" id="retry">틀린 문제만 다시 풀기</button>
+      <button class="btn ghost" id="reset">처음부터</button>
+      <button class="btn ghost" id="closeEnd">닫고 돌아가기</button>
+    </div>
+    <div class="note" id="sendNote">결과를 보내면 리아가 틀린 표현을 기록해 다음 수업과 "지난 오답 풀기"에 다시 넣어요.</div>
+  </div>
+</div>
+<script>
+const DATA = {"id": "day048", "day": 48, "date": "2026-11-27", "theme": "설득·협상 + 스몰토크 + 📰 시사·경제", "questions": [{"expr": "I can live with that. / Can you live with ~?", "bank_key": "I can live with that. / Can you live with ~?", "tag": "뉘앙스 Nuance", "q": "Your manager proposes moving the Noon promo from 1 to 5 December. It's not what you wanted, but you'll accept it. Which reply sends that message?", "q_ko": "매니저가 눈(Noon) 프로모션을 12월 1일에서 5일로 옮기자고 해요. 원하던 건 아니지만 받아들이겠다는 뜻을 전하는 답은?", "opts": ["I'm living with that.", "Fine — I can live with that.", "I can live on that.", "That lives with me."], "a": 1, "why": "I can live with that이 '최선은 아니지만 수용 가능'이라는 정형 표현이에요. live on은 '~로 먹고살다', 진행형 I'm living with는 '함께 살고 있다'로 들려요.", "why_en": "\"I can live with that\" = not ideal, but acceptable."}, {"expr": "Would you be open to ~?", "bank_key": "Would you be open to ~?", "tag": "용법 Usage", "q": "A distributor refuses to take the full 40-container order. You want to suggest a smaller trial order without pushing. Which sentence is grammatically correct?", "q_ko": "유통사가 40컨테이너 전체 주문을 거절해요. 밀어붙이지 않고 소량 시험 주문을 제안하고 싶어요. 문법적으로 맞는 문장은?", "opts": ["Would you be open to start with a 10-container trial?", "Would you open to a 10-container trial?", "Would you be open for a 10-container trial?", "Would you be open to starting with a 10-container trial?"], "a": 3, "why": "open to의 to는 전치사라 동명사(starting)가 와요. be를 빠뜨리거나 open for를 쓰면 틀려요.", "why_en": "\"Open to\" + -ing: open to starting."}, {"expr": "sweeten the deal (sweeten the offer)", "bank_key": "sweeten the deal (sweeten the offer)", "tag": "상황 Situation", "q": "An e-commerce partner is hesitant to feature LG on its homepage. You decide to add free next-day delivery funded by LG, without touching the price. Which line fits?", "q_ko": "이커머스 파트너가 홈페이지에 LG를 걸지 망설여요. 가격은 건드리지 않고 LG 부담으로 익일 무료 배송을 얹기로 했어요. 알맞은 말은?", "opts": ["Let's sweeten the deal with free next-day delivery on us.", "Let's sweet the deal with free next-day delivery.", "Let's sweeten the price with free next-day delivery.", "Let's sugar the deal with free next-day delivery."], "a": 0, "why": "부가 조건을 얹어 제안을 매력적으로 만드는 건 sweeten the deal이에요. sweet은 형용사, sweeten the price나 sugar the deal은 쓰지 않아요.", "why_en": "Add an extra to make it attractive: \"sweeten the deal.\""}, {"expr": "Congrats on ~ — (very) well deserved.", "bank_key": "Congrats on ~ — (very) well deserved.", "tag": "용법 Usage", "q": "Your counterpart at the agency just won a regional Effie award. Which Slack message is correct and natural?", "q_ko": "에이전시 담당자가 지역 에피 어워드를 받았어요. 문법도 맞고 자연스러운 슬랙 메시지는?", "opts": ["Congratulation for the Effie — well deserving!", "Congrats for the Effie — you are deserved!", "Congrats on the Effie — very well deserved!", "Congrats about the Effie — well deserve!"], "a": 2, "why": "Congrats on + 명사, 뒤에 (very) well deserved가 정형이에요. Congratulation 단수형, for/about, well deserving, you are deserved는 모두 틀려요.", "why_en": "\"Congrats on X — well deserved.\""}, {"expr": "📰 (close / end) well off the lows (off session lows)", "bank_key": "(close / end) well off the lows (off session lows)", "tag": "뉘앙스 Nuance", "q": "A market note says: \"The Nasdaq fell 4% in the morning but closed down only 0.6%, well off the lows.\" What does \"well off the lows\" tell you?", "q_ko": "시황 메모에 \"나스닥은 오전에 4% 빠졌지만 0.6% 하락으로 마감해 저점에서 한참 올라왔다(well off the lows)\"고 적혀 있어요. 'well off the lows'가 알려 주는 것은?", "opts": ["The index closed at its lowest point of the day.", "The index closed higher than the previous day.", "The index hit a new yearly low.", "The index recovered much of its earlier drop, though it still closed lower."], "a": 3, "why": "well off the lows는 '장중 최저점보다 한참 올라와서'라는 뜻이라, 마이너스로 끝났어도 낙폭을 많이 만회했다는 의미예요. 상승 마감이나 최저점 마감이 아니에요.", "why_en": "\"Well off the lows\" = still down, but far above the day's worst level."}, {"expr": "📰 find its footing (after a bruising month / quarter)", "bank_key": "find its footing (after a bruising month / quarter)", "tag": "뉘앙스 Nuance", "q": "After three weak months, your Morocco online store has held steady for two weeks, but it's too early to call it a recovery. Which sentence fits that cautious tone best?", "q_ko": "석 달간 부진했던 모로코 온라인 스토어가 2주째 안정적이지만 회복이라 부르기엔 일러요. 이 조심스러운 톤에 가장 맞는 문장은?", "opts": ["Morocco is skyrocketing after a bruising quarter.", "Morocco is starting to find its footing after a bruising quarter.", "Morocco has fully bounced back after a bruised quarter.", "Morocco is finding footings after a bruising quarter."], "a": 1, "why": "find its footing은 '흔들리다 자리를 잡기 시작하다'라 회복 단정 없이 조심스러워요. skyrocketing·fully bounced back은 너무 강하고, bruised quarter·footings는 틀린 형태예요.", "why_en": "\"Find its footing\" = stabilising, not yet a full recovery."}], "review": [{"expr": "temper (expectations / concerns)", "bank_key": "temper (expectations / concerns)", "tag": "지난 오답 Review", "from": "Day 27", "q": "The regional head is excited that LG.com Egypt traffic doubled during White Friday, but most of it came from a one-off influencer post. In your reply, which line works best?", "q_ko": "지역 대표가 화이트 프라이데이 동안 LG.com 이집트 트래픽이 두 배가 된 걸 반기는데, 대부분 일회성 인플루언서 게시물 덕분이에요. 답장에 가장 알맞은 말은?", "opts": ["Great news — though I'd tamper our excitement; most of it came from one influencer post.", "Great news — though I'd lose temper over it; most of it came from one influencer post.", "Great news — though I'd temper expectations for December; most of it came from one influencer post.", "Great news — though I'd temper with expectations; most of it came from one influencer post."], "a": 2, "why": "temper expectations가 '기대치를 현실적으로 조절하다'예요. tamper는 '조작하다', lose temper는 '화내다', temper with는 쓰지 않는 형태예요.", "why_en": "\"Temper expectations\" — not \"tamper,\" no \"with.\""}, {"expr": "directionally right / directionally correct", "bank_key": "directionally right / directionally correct", "tag": "지난 오답 Review", "from": "Day 6", "q": "Your team made a quick estimate of Black Friday market share from partial retailer data. The numbers will change, but the trend should hold. How do you introduce it to HQ?", "q_ko": "팀이 일부 유통사 데이터로 블랙프라이데이 점유율을 급히 추정했어요. 숫자는 바뀌겠지만 흐름은 맞을 거예요. 본사에 어떻게 소개할까요?", "opts": ["This is a rough read, but it should be directionally correct — we gained share in TVs.", "This is a rough read, but it's directly correct — we gained share in TVs.", "This is a rough read, but it's direction-correctly — we gained share in TVs.", "This is a rough read, so it's final — we gained share in TVs."], "a": 0, "why": "정확한 숫자는 아니어도 '방향은 맞다'는 directionally correct예요. directly correct는 '정확히 맞다'는 다른 뜻이고, direction-correctly는 없는 형태예요.", "why_en": "\"Directionally correct\" = the trend is right, the exact numbers may move."}, {"expr": "bolster the case for ~", "bank_key": "bolster the case for ~", "tag": "지난 오답 Review", "from": "Day 26", "q": "Customers who used the new AR room-viewer on LG.com Saudi converted 2x better. You want to argue for rolling it out to the UAE. Which sentence works?", "q_ko": "LG.com 사우디의 새 AR 공간 미리보기를 쓴 고객의 전환율이 두 배였어요. UAE에도 도입하자고 주장하고 싶어요. 알맞은 문장은?", "opts": ["The Saudi data bolsters for the case of a UAE rollout.", "I bolster the case to roll out in the UAE.", "The Saudi data bolsters the case of rolling it out in the UAE.", "The Saudi data bolsters the case for rolling it out in the UAE."], "a": 3, "why": "근거(데이터)가 주어가 되고 the case for + 명사/동명사가 맞는 형태예요. case of / case to는 어색하고, 사람이 주어면 make the case for가 자연스러워요.", "why_en": "Evidence \"bolsters the case for\" + noun/-ing."}, {"expr": "a heads-up", "bank_key": "a heads-up", "tag": "가끔 복습 Mix", "from": "Day 1", "q": "You want to warn the Saudi team in advance that the Amazon price feed will be down for maintenance on Sunday. Which opening line is most natural?", "q_ko": "일요일에 아마존 가격 피드가 점검으로 멈춘다는 걸 사우디 팀에 미리 알려 주려고 해요. 가장 자연스러운 첫 문장은?", "opts": ["Quick heads-up: the Amazon price feed will be down for maintenance on Sunday.", "Quick heads-down: the Amazon price feed will be down for maintenance on Sunday.", "I give you a head up that the Amazon price feed will be down on Sunday.", "Please heads-up: the Amazon price feed will be down on Sunday."], "a": 0, "why": "미리 알려 주는 짧은 예고는 (Just a / Quick) heads-up이에요. heads-down은 '집중해서 일하는'이라는 다른 뜻이고, a head up이나 동사처럼 쓰는 Please heads-up은 어색해요.", "why_en": "\"Quick heads-up:\" is the natural way to flag something in advance."}]};
+const SETS = { today: DATA.questions, review: DATA.review || [] };
+const KEY = "eng-quiz-" + DATA.id;
+const saved = JSON.parse(localStorage.getItem(KEY) || '{"today":{},"review":{},"sent":{}}');
+let cur = location.hash === "#review" ? "review" : "today", only = null;  // 메일의 "지난 오답 풀기" 링크는 #review
+
+document.getElementById("sub").textContent = `Day ${DATA.day} · ${DATA.theme} · ${DATA.date}`;
+document.getElementById("cntToday").textContent = `(${SETS.today.length})`;
+document.getElementById("cntReview").textContent = `(${SETS.review.length})`;
+
+function save() { localStorage.setItem(KEY, JSON.stringify(saved)); }
+function qs() { return SETS[cur]; }
+function st() { return saved[cur]; }
+
+function render() {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.set === cur));
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  if (!qs().length) {
+    list.innerHTML = '<div class="empty">지난 오답이 없어요 👏<br>틀린 문제가 생기면 여기에서 예문을 바꿔 다시 풀 수 있어요.</div>';
+    document.getElementById("result").style.display = "none";
+    document.getElementById("prog").style.width = "0";
+    return;
+  }
+  qs().forEach((it, i) => {
+    if (only && !only.includes(i)) return;
+    const card = document.createElement("div");
+    card.className = "q";
+    card.innerHTML = `<div class="meta">${i + 1} / ${qs().length}<span class="tag"></span></div>
+      <h2></h2><div class="ko"></div><div class="opts"></div><div class="exp"><b></b><span></span><span class="en"></span><div class="note"></div></div>`;
+    card.querySelector(".tag").textContent = it.tag + (it.from ? ` · ${it.from}` : "");
+    card.querySelector("h2").textContent = it.q;
+    card.querySelector(".ko").textContent = it.q_ko || "";
+    card.querySelector(".exp .en").textContent = it.why_en || "";
+    card.querySelector(".exp span").textContent = it.why;
+    card.querySelector(".exp .note").textContent = "표현: " + it.expr;
+    it.opts.forEach((o, j) => {
+      const b = document.createElement("button");
+      // 보기는 영어만 보여준다 (한국어 번역은 정답을 흘리므로 표시하지 않음 — 2026-10-25 실장님 지시)
+      const en = Array.isArray(o) ? o[0] : o;
+      b.className = "opt"; b.textContent = `${"ABCD"[j]}. ${en}`;
+      b.onclick = () => { st()[i] = j; save(); paint(card, it, i); update(); };
+      card.querySelector(".opts").appendChild(b);
+    });
+    list.appendChild(card);
+    if (st()[i] !== undefined) paint(card, it, i);
+  });
+  update();
+}
+
+function paint(card, it, i) {
+  const pick = st()[i];
+  card.classList.add("done");
+  card.classList.toggle("wrong", pick !== it.a);
+  card.querySelectorAll(".opt").forEach((b, j) => {
+    b.disabled = true;
+    if (j === it.a) b.classList.add("ok");
+    if (j === pick && pick !== it.a) b.classList.add("ng");
+  });
+  card.querySelector(".exp b").textContent = pick === it.a ? "✅ 정답" : `❌ 오답 — 정답은 ${"ABCD"[it.a]}`;
+}
+
+function wrongOf(set) { return SETS[set].map((_, i) => i).filter(i => saved[set][i] !== undefined && saved[set][i] !== SETS[set][i].a); }
+
+function update() {
+  const scope = only || qs().map((_, i) => i);
+  document.getElementById("prog").style.width = (scope.filter(i => st()[i] !== undefined).length / scope.length * 100) + "%";
+  const done = qs().every((_, i) => st()[i] !== undefined);
+  document.getElementById("result").style.display = done ? "block" : "none";
+  if (!done) return;
+  const wrong = wrongOf(cur);
+  document.getElementById("resTitle").textContent = cur === "today" ? "오늘의 점수" : "지난 오답 다시 풀기";
+  document.getElementById("score").textContent = `${qs().length - wrong.length} / ${qs().length}`;
+  document.getElementById("wrongTitle").textContent = wrong.length ? "복습할 표현" : "전부 맞혔어요 👏";
+  document.getElementById("wrongList").innerHTML = "";
+  wrong.forEach(i => { const li = document.createElement("li"); li.textContent = `${i + 1}번 — ${qs()[i].expr}`;
+                       document.getElementById("wrongList").appendChild(li); });
+  document.getElementById("retry").style.display = wrong.length ? "" : "none";
+  document.getElementById("send").textContent = saved.sent[cur] ? "결과 다시 보내기" : "결과 보내기";
+}
+
+// 결과 보내기: 리아가 읽을 수 있는 정해진 형식으로 메일을 만든다 (회사 PC·휴대폰 어디서나 동작)
+function resultText(set) {
+  const w = wrongOf(set);
+  return `[ENG-RESULT] ${DATA.id} ${set} ${SETS[set].length - w.length}/${SETS[set].length} wrong=${w.map(i => i + 1).join(",") || "none"}\n`
+       + w.map(i => `- ${i + 1}. ${SETS[set][i].expr}`).join("\n");
+}
+document.getElementById("send").onclick = () => {
+  const body = resultText(cur);
+  saved.sent[cur] = new Date().toISOString(); save(); update();
+  // 리아 웹(실장님 Mac) 안에서 열렸으면 바로 기록
+  if (location.port === "8765") {
+    // 리아 웹에서 열었으면 메일 없이 바로 기록하고 끝 (실패하면 메일로)
+    fetch("/api/english/result", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: DATA.id, set: cur, answers: saved[cur], text: body }) })
+      .then(r => { if (!r.ok) throw 0; alert("리아에게 결과를 보냈어요 ✓"); })
+      .catch(() => mailResult(body));
+    return;
+  }
+  mailResult(body);
+};
+function mailResult(body) {
+  location.href = "mailto:juslisten@gmail.com?subject=" + encodeURIComponent(`[퀴즈 결과] Day ${DATA.day} (${DATA.date})`)
+                + "&body=" + encodeURIComponent(body + "\n\n(이대로 보내기만 하면 리아가 기록해요)");
+}
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { cur = t.dataset.set; only = null; render(); window.scrollTo(0, 0); });
+document.getElementById("retry").onclick = () => {
+  only = wrongOf(cur); only.forEach(i => delete st()[i]); save(); render(); window.scrollTo(0, 0);
+};
+document.getElementById("reset").onclick = () => { saved[cur] = {}; only = null; save(); render(); window.scrollTo(0, 0); };
+function closeQuiz() {
+  if (window.parent !== window) { window.parent.postMessage('lia-close-viewer', '*'); return; }
+  window.close();
+  setTimeout(() => {
+    if (location.port === "8765") location.href = "/";
+    else if (history.length > 1) history.back();
+    else location.href = "about:blank";
+  }, 300);
+}
+document.getElementById("closeTop").onclick = closeQuiz;
+document.getElementById("closeEnd").onclick = closeQuiz;
+render();
+</script>
+</body>
+</html>
